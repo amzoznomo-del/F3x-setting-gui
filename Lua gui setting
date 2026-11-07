@@ -1,0 +1,518 @@
+--[=[
+    GUI Creator with Extended Presets (Total 26) & ZIndex Layering (F3X & HD Admin)
+    Features: Decal, Skybox, Skybox Spin, Particle + Settings Panel (Behind Main GUI) + Preset Grid
+    Created by Tobous93 style / English Version
+]=]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+-- Remove existing GUI if already loaded
+if CoreGui:FindFirstChild("F3XToolGUI") then
+    CoreGui.F3XToolGUI:Destroy()
+end
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "F3XToolGUI"
+screenGui.Parent = CoreGui
+screenGui.ResetOnSpawn = false
+
+-- Main Frame (ZIndex = 2 to stay on top)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 500, 0, 460)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -230)
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.fromRGB(255, 255, 0)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.ZIndex = 2
+mainFrame.Parent = screenGui
+
+-- Settings Panel (ZIndex = 1, positioned behind MainFrame)
+local settingsFrame = Instance.new("ScrollingFrame")
+settingsFrame.Name = "SettingsFrame"
+settingsFrame.Size = UDim2.new(0, 200, 0, 460)
+settingsFrame.AnchorPoint = Vector2.new(1, 0)
+settingsFrame.Position = UDim2.new(1, 0, 0, 0)
+settingsFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+settingsFrame.BorderSizePixel = 2
+settingsFrame.BorderColor3 = Color3.fromRGB(255, 255, 0)
+settingsFrame.ZIndex = 1
+settingsFrame.CanvasSize = UDim2.new(0, 0, 0, 520)
+settingsFrame.ScrollBarThickness = 4
+settingsFrame.Parent = mainFrame
+
+-- Toggle Settings Button (ZIndex = 3 to stay above both frames)
+local toggleSettingsBtn = Instance.new("TextButton")
+toggleSettingsBtn.Name = "ToggleSettingsButton"
+toggleSettingsBtn.Size = UDim2.new(0, 30, 0, 100)
+toggleSettingsBtn.Position = UDim2.new(1, 0, 0.5, -50)
+toggleSettingsBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+toggleSettingsBtn.BorderSizePixel = 2
+toggleSettingsBtn.BorderColor3 = Color3.fromRGB(255, 255, 0)
+toggleSettingsBtn.Text = "o\np\ne\nn\n \ns\ne\nt\nt\ni\nn\ng\ns"
+toggleSettingsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleSettingsBtn.TextSize = 12
+toggleSettingsBtn.Font = Enum.Font.Code
+toggleSettingsBtn.ZIndex = 3
+toggleSettingsBtn.Parent = mainFrame
+
+local settingsOpen = false
+toggleSettingsBtn.MouseButton1Click:Connect(function()
+    settingsOpen = not settingsOpen
+    local targetPos = settingsOpen and UDim2.new(1, 200, 0, 0) or UDim2.new(1, 0, 0, 0)
+    local targetButtonText = settingsOpen and "c\nl\ne\ a\nr\n \ns\ne\nt\nt\ni\nn\ng\ns" or "o\np\ne\nn\n \ns\ne\nt\nt\ni\nn\ng\ns"
+    
+    settingsFrame:TweenPosition(targetPos, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+    toggleSettingsBtn.Text = targetButtonText
+end)
+
+-- Settings Title
+local settingsTitle = Instance.new("TextLabel")
+settingsTitle.Size = UDim2.new(1, 0, 0, 30)
+settingsTitle.BackgroundTransparency = 1
+settingsTitle.Text = "SETTINGS"
+settingsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+settingsTitle.TextSize = 14
+settingsTitle.Font = Enum.Font.Code
+settingsTitle.ZIndex = 1
+settingsTitle.Parent = settingsFrame
+
+local function createSettingInput(name, defaultText, posY)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 14)
+    label.Position = UDim2.new(0, 5, 0, posY)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 10
+    label.Font = Enum.Font.Code
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 1
+    label.Parent = settingsFrame
+    
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(1, -10, 0, 22)
+    box.Position = UDim2.new(0, 5, 0, posY + 15)
+    box.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    box.BorderSizePixel = 1
+    box.BorderColor3 = Color3.fromRGB(255, 255, 0)
+    box.Text = defaultText
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.TextSize = 11
+    box.Font = Enum.Font.Code
+    box.ClearTextOnFocus = false
+    box.ZIndex = 1
+    box.Parent = settingsFrame
+    
+    return box
+end
+
+-- Settings Inputs
+local skyboxSizeBox = createSettingInput("Skybox Size (X,Y,Z):", "1500,1500,1500", 35)
+local spinAngleBox = createSettingInput("Spin Angle (X,Y):", "0,0", 85)
+local spinSizeBox = createSettingInput("Spin Size (X,Y,Z):", "1500,1500,1500", 135)
+
+local particleSizeBox = createSettingInput("Particle Size:", "1", 185)
+local particleSpeedBox = createSettingInput("Particle Speed:", "5", 235)
+local particleRateBox = createSettingInput("Particle Rate:", "50", 285)
+local particleLifetimeBox = createSettingInput("Particle Lifetime:", "120", 335)
+local particleSpreadBox = createSettingInput("Particle SpreadAngle:", "50", 385)
+local particleLightEmissionBox = createSettingInput("Particle LightEmission:", "1", 435)
+local particleLightInfluenceBox = createSettingInput("Particle LightInfluence:", "0", 485)
+
+-- Header Title (Main GUI)
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, 0, 0, 40)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "create\n[ Decal skybox skybox spin and particle ]\nF3X Only!"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 14
+titleLabel.Font = Enum.Font.Code
+titleLabel.ZIndex = 2
+titleLabel.Parent = mainFrame
+
+-- Footer Label
+local footerLabel = Instance.new("TextLabel")
+footerLabel.Name = "FooterLabel"
+footerLabel.Size = UDim2.new(1, 0, 0, 20)
+footerLabel.Position = UDim2.new(0, 0, 1, -20)
+footerLabel.BackgroundTransparency = 1
+footerLabel.Text = "make by Tobous93 [ @Tobous93 ]"
+footerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+footerLabel.TextSize = 11
+footerLabel.Font = Enum.Font.Code
+footerLabel.ZIndex = 2
+footerLabel.Parent = mainFrame
+
+-- Left Image Preview Box
+local imageBox = Instance.new("Frame")
+imageBox.Name = "ImageBox"
+imageBox.Size = UDim2.new(0, 200, 0, 200)
+imageBox.Position = UDim2.new(0, 20, 0, 70)
+imageBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+imageBox.BorderSizePixel = 2
+imageBox.BorderColor3 = Color3.fromRGB(255, 255, 0)
+imageBox.ZIndex = 2
+imageBox.Parent = mainFrame
+
+local noImageText = Instance.new("TextLabel")
+noImageText.Size = UDim2.new(1, 0, 1, 0)
+noImageText.BackgroundTransparency = 1
+noImageText.Text = "no Image"
+noImageText.TextColor3 = Color3.fromRGB(255, 255, 255)
+noImageText.TextSize = 20
+noImageText.Font = Enum.Font.Code
+noImageText.ZIndex = 2
+noImageText.Parent = imageBox
+
+local decalPreview = Instance.new("ImageLabel")
+decalPreview.Size = UDim2.new(1, 0, 1, 0)
+decalPreview.BackgroundTransparency = 1
+decalPreview.Image = "rbxassetid://97333348867568"
+decalPreview.ZIndex = 2
+decalPreview.Parent = imageBox
+
+-- Right Input TextBox
+local idTextBox = Instance.new("TextBox")
+idTextBox.Name = "IDTextBox"
+idTextBox.Size = UDim2.new(0, 230, 0, 35)
+idTextBox.Position = UDim2.new(0, 245, 0, 70)
+idTextBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+idTextBox.BorderSizePixel = 2
+idTextBox.BorderColor3 = Color3.fromRGB(255, 255, 0)
+idTextBox.Text = "97333348867568"
+idTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+idTextBox.TextSize = 14
+idTextBox.Font = Enum.Font.Code
+idTextBox.ClearTextOnFocus = false
+idTextBox.ZIndex = 2
+idTextBox.Parent = mainFrame
+
+idTextBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local textId = idTextBox.Text
+    if textId ~= "" then
+        decalPreview.Image = "rbxassetid://" .. textId
+    else
+        decalPreview.Image = ""
+    end
+end)
+
+-- ==========================================
+-- BOTTOM PRESET DECAL BUTTONS (26 Images)
+-- ==========================================
+local presetContainer = Instance.new("ScrollingFrame")
+presetContainer.Name = "PresetContainer"
+presetContainer.Size = UDim2.new(0, 460, 0, 120)
+presetContainer.Position = UDim2.new(0, 20, 0, 285)
+presetContainer.BackgroundTransparency = 1
+presetContainer.BorderSizePixel = 0
+presetContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+presetContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+presetContainer.ScrollBarThickness = 4
+presetContainer.ZIndex = 2
+presetContainer.Parent = mainFrame
+
+local gridLayout = Instance.new("UIGridLayout")
+gridLayout.CellSize = UDim2.new(0, 44, 0, 44)
+gridLayout.CellPadding = UDim2.new(0, 6, 0, 6)
+gridLayout.Parent = presetContainer
+
+local presetIds = {
+    "92357412956834",
+    "101024107954363",
+    "86902450876929",
+    "137060080517268",
+    "133920724322516",
+    "94914585108843",
+    "101250916305593",
+    "97333348867568",
+    "77376724804100",
+    "127797109190290",
+    "103107302577879",
+    "112653959822897",
+    "123050990183584",
+    "78065621727004",
+    "135364071727256",
+    "115192566683287",
+    "81787428278488",
+    "93524398025259",
+    "133231175714676",
+    "80896784965403",
+    "86866921778796",
+    "100876372405726",
+    "129979180775576",
+    "73501371682576",
+    "122843097994401",
+    "117876554001314"
+}
+
+for _, id in ipairs(presetIds) do
+    local btn = Instance.new("ImageButton")
+    btn.Size = UDim2.new(0, 44, 0, 44)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    btn.BorderSizePixel = 1
+    btn.BorderColor3 = Color3.fromRGB(255, 255, 0)
+    btn.Image = "rbxassetid://" .. id
+    btn.ScaleType = Enum.ScaleType.Fit
+    btn.ZIndex = 2
+    btn.Parent = presetContainer
+    
+    btn.MouseButton1Click:Connect(function()
+        idTextBox.Text = id
+    end)
+end
+
+-- Helper function to get F3X tool remote
+local function getF3XRemote()
+    local tool
+    local char = player.Character
+    if char then
+        tool = char:FindFirstChild("Building Tools+") or char:FindFirstChild("Building Tools")
+    end
+    if not tool and player:FindFirstChild("Backpack") then
+        tool = player.Backpack:FindFirstChild("Building Tools+") or player.Backpack:FindFirstChild("Building Tools")
+    end
+    if not tool then
+        for _, v in ipairs(player:GetDescendants()) do
+            if v.Name == "SyncAPI" then tool = v.Parent break end
+        end
+    end
+    if not tool then
+        for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
+            if v.Name == "SyncAPI" then tool = v.Parent break end
+        end
+    end
+    if tool and tool:FindFirstChild("SyncAPI") then
+        return tool.SyncAPI:FindFirstChild("ServerEndpoint") or tool.SyncAPI
+    end
+    return nil
+end
+
+-- Button Creator Function
+local function createButton(name, posY, callback)
+    local btn = Instance.new("TextButton")
+    btn.Name = name .. "Button"
+    btn.Size = UDim2.new(0, 230, 0, 30)
+    btn.Position = UDim2.new(0, 245, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    btn.BorderSizePixel = 2
+    btn.BorderColor3 = Color3.fromRGB(255, 255, 0)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 16
+    btn.Font = Enum.Font.Code
+    btn.ZIndex = 2
+    btn.Parent = mainFrame
+    
+    btn.MouseButton1Click:Connect(function()
+        local currentId = idTextBox.Text
+        if currentId == "" then currentId = "97333348867568" end
+        callback(currentId)
+    end)
+end
+
+local function parseVector3(str, defaultVec)
+    local success, x, y, z = pcall(function()
+        local split = string.split(str, ",")
+        return tonumber(split[1]), tonumber(split[2]), tonumber(split[3])
+    end)
+    if success and x and y and z then
+        return Vector3.new(x, y, z)
+    end
+    return defaultVec
+end
+
+-- ==========================================
+-- FUNCTION 1: Decal
+-- ==========================================
+createButton("Decal", 115, function(id)
+    task.spawn(function()
+        local remote = getF3XRemote()
+        if not remote then return end
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                task.spawn(function()
+                    pcall(function()
+                        remote:InvokeServer("SetLocked", {v}, false)
+                        for _, face in pairs(Enum.NormalId:GetEnumItems()) do
+                            remote:InvokeServer("CreateTextures", {{["Part"] = v, ["Face"] = face, ["TextureType"] = "Decal"}})
+                            remote:InvokeServer("SyncTexture", {{["Part"] = v, ["Face"] = face, ["TextureType"] = "Decal", ["Texture"] = "rbxassetid://" .. id}})
+                        end
+                    end)
+                end)
+            end
+        end
+    end)
+end)
+
+-- ==========================================
+-- FUNCTION 2: Skybox
+-- ==========================================
+createButton("skybox", 155, function(id)
+    task.spawn(function()
+        pcall(function()
+            local rc = ReplicatedStorage:WaitForChild("HDAdminHDClient", 2)
+            if rc and rc:FindFirstChild("Signals") and rc.Signals:FindFirstChild("RequestCommandSilent") then
+                rc.Signals.RequestCommandSilent:InvokeServer(";fogcolor black")
+            end
+        end)
+        
+        local tool = player.Backpack:FindFirstChild("Building Tools") or (player.Character and player.Character:FindFirstChild("Building Tools"))
+        local remote = tool and tool:FindFirstChild("SyncAPI") and tool.SyncAPI:FindFirstChild("ServerEndpoint")
+        if not remote then
+            local r = getF3XRemote()
+            if r then remote = r else return end
+        end
+        
+        local char = player.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local pos = char.HumanoidRootPart.Position + Vector3.new(1, 10, 0)
+        local cleanCF = CFrame.new(pos)  
+        
+        remote:InvokeServer("CreatePart", "Normal", cleanCF, workspace) 
+        task.wait(0.5) 
+        
+        local customSize = parseVector3(skyboxSizeBox.Text, Vector3.new(1500, 1500, 1500))
+        
+        for _, v in pairs(workspace:GetChildren()) do     
+            if v:IsA("BasePart") and (v.Position - pos).Magnitude < 5 then         
+                remote:InvokeServer("SyncMove", {{["Part"] = v, ["CFrame"] = cleanCF}})         
+                remote:InvokeServer("CreateMeshes", {{["Part"] = v}})         
+                remote:InvokeServer("SyncMesh", {{["Part"] = v, ["MeshId"] = "rbxassetid://111891702759441", ["TextureId"] = "rbxassetid://" .. id, ["Scale"] = customSize}})         
+                remote:InvokeServer("SetName", {v}, "SkyBox_Z")         
+                remote:InvokeServer("SetLocked", {v}, true)     
+            end 
+        end
+    end)
+end)
+
+-- ==========================================
+-- FUNCTION 3: Skybox Spin
+-- ==========================================
+createButton("skybox spin", 195, function(id)
+    task.spawn(function()
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        local tool
+        for _, obj in player:GetDescendants() do
+            if obj.Name == "SyncAPI" then tool = obj.Parent break end
+        end
+        if not tool then
+            for _, obj in ReplicatedStorage:GetDescendants() do
+                if obj.Name == "SyncAPI" then tool = obj.Parent break end
+            end
+        end
+        if not tool or not tool:FindFirstChild("SyncAPI") then return end
+        local SyncAPI = tool.SyncAPI
+        
+        local part, baseCF
+        local angle = 0
+        local connection
+        
+        local function invokeArgs(args)
+            pcall(function() SyncAPI:Invoke(unpack(args)) end)
+        end
+        
+        local startCF = hrp.CFrame + Vector3.new(0, 6, 0)
+        invokeArgs({"CreatePart", "Normal", startCF, workspace})
+        
+        task.wait(0.2)
+        for _, obj in workspace:GetDescendants() do
+            if obj:IsA("BasePart") and (obj.Position - startCF.Position).Magnitude < 1 then
+                part = obj
+                baseCF = part.CFrame
+                invokeArgs({"SyncAnchor", {{["Part"] = part, ["Anchored"] = true}}})
+                invokeArgs({"CreateMeshes", {{["Part"] = part}}})
+                invokeArgs({"SyncMesh", {{["Part"] = part, ["MeshId"] = "rbxassetid://111891702759441"}}})
+                invokeArgs({"SyncMesh", {{["Part"] = part, ["TextureId"] = "rbxassetid://" .. id}}})
+                
+                local customSpinSize = parseVector3(spinSizeBox.Text, Vector3.new(1500, 1500, 1500))
+                invokeArgs({"SyncMesh", {{["Part"] = part, ["Scale"] = customSpinSize}}})
+                invokeArgs({"SyncTransparency", {{["Part"] = part, ["Transparency"] = 0}}})
+                
+                local angX, angY = 0, 0
+                local success, ax, ay = pcall(function()
+                    local split = string.split(spinAngleBox.Text, ",")
+                    return tonumber(split[1]) or 0, tonumber(split[2]) or 0
+                end)
+                if success then
+                    angX, angY = ax, ay
+                end
+                
+                local rotation = math.rad(20)
+                connection = RunService.Heartbeat:Connect(function(dt)
+                    if not part or not part.Parent then
+                        if connection then connection:Disconnect() connection = nil end
+                        return
+                    end
+                    angle = angle + (rotation * dt)
+                    local cf = baseCF * CFrame.Angles(angX, angle + angY, 0)
+                    pcall(function()
+                        SyncAPI:Invoke("SyncRotate", {{["Part"] = part, ["CFrame"] = cf}})
+                    end)
+                    part.CFrame = cf
+                end)
+                break
+            end
+        end
+    end)
+end)
+
+-- ==========================================
+-- FUNCTION 4: Particle
+-- ==========================================
+createButton("particle", 235, function(id)
+    task.spawn(function()
+        local remote = getF3XRemote()
+        if not remote then return end
+        
+        local function sendArgs(args)
+            pcall(function() remote:InvokeServer(unpack(args)) end)
+        end
+        
+        local pSize = particleSizeBox.Text ~= "" and particleSizeBox.Text or "1"
+        local pSpeed = tonumber(particleSpeedBox.Text) or 5
+        local pRate = tonumber(particleRateBox.Text) or 50
+        local pLifetime = tonumber(particleLifetimeBox.Text) or 120
+        local pSpread = tonumber(particleSpreadBox.Text) or 50
+        local pLightEm = tonumber(particleLightEmissionBox.Text) or 1
+        local pLightInf = tonumber(particleLightInfluenceBox.Text) or 0
+        
+        local function processPart(p)
+            if p:IsA("BasePart") then
+                task.spawn(function()
+                    sendArgs({"CreateDecorations", {{["Part"] = p, ["DecorationType"] = "ParticleEmitter"}}})
+                    task.wait(0.05)
+                    sendArgs({"SyncDecorate", {{
+                        ["Part"] = p,
+                        ["DecorationType"] = "ParticleEmitter",
+                        ["Texture"] = "rbxassetid://" .. id,
+                        ["Size"] = pSize,
+                        ["Speed"] = pSpeed,
+                        ["Rate"] = pRate,
+                        ["Lifetime"] = pLifetime,
+                        ["SpreadAngle"] = pSpread,
+                        ["LightEmission"] = pLightEm,
+                        ["LightInfluence"] = pLightInf
+                    }}})
+                end)
+            end
+        end
+        
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            processPart(obj)
+        end
+    end)
+end)
